@@ -7,11 +7,12 @@ import {
   NotFoundException,
   Param,
   Patch,
-  Post,
+  Post
 } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CsvParser } from 'src/providers/csv-parser.provider';
 import { CreateUserDto } from './dto/create-user.dto';
+import { SearchUserDto } from './dto/search-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
@@ -54,7 +55,13 @@ export class UserController {
   @ApiOkResponse({ type: UserDto })
   @ApiNotFoundResponse()
   async getByUsername(@Param('username') username: string): Promise<UserDto> {
-    return await this.userService.findByUserName(username);
+    const user = await this.userService.findByUserName(username);
+
+    if (!user) {
+      throw new NotFoundException(`Username ${username} not found.`)
+    }
+    
+    return user;
   }
 
   @Get('/:_id')
@@ -69,6 +76,19 @@ export class UserController {
     }
 
     return user;
+  }
+
+  @Post('/search')
+  @ApiOperation({ summary: 'Find use based on terms'})
+  @ApiOkResponse({ type: UserDto })
+  async findByTerms(@Body() terms: SearchUserDto): Promise<UserDto[]> {
+    const users = await this.userService.findByTerms(terms);
+
+    if (!users.length) {
+      throw new NotFoundException(`No users found.`);
+    }
+
+    return users;
   }
 
   @Post('/seed-data')
